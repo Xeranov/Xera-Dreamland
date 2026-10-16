@@ -86,3 +86,4 @@ The compiled output in `dist/` is ready to be hosted on Cloudflare Pages, Vercel
 ## 📜 License
 
 Created with ❤️ for `xeranov.com`.
+
