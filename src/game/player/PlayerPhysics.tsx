@@ -61,6 +61,7 @@ export const PlayerPhysics: React.FC<PlayerPhysicsProps> = ({
   const dashActiveUntilRef = useRef<number>(0);
   const dashDirectionRef = useRef<THREE.Vector3>(new THREE.Vector3(0, 0, 1));
   const lastDashNotifyTimeRef = useRef<number>(0);
+  const isRespawningRef = useRef<boolean>(false);
 
   // Footstep Timer
   const footstepAccumulatorRef = useRef<number>(0);
@@ -153,27 +154,40 @@ export const PlayerPhysics: React.FC<PlayerPhysicsProps> = ({
         true
       );
       rigidBodyRef.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
-      GameState.showBanner('Oops! Respawned at checkpoint 🐾');
-      AudioManager.playLand();
+
+      if (!isRespawningRef.current) {
+        isRespawningRef.current = true;
+        AudioManager.playLand();
+        requestAnimationFrame(() => {
+          GameState.showBanner('Oops! Respawned at checkpoint 🐾');
+          setTimeout(() => {
+            isRespawningRef.current = false;
+          }, 1200);
+        });
+      }
       return;
     }
 
     // 1. Raycast Ground Detection
+    // Do not detect ground while ascending during the first 180ms of a jump
+    const isActivelyAscendingJump = now - lastJumpTimeRef.current < 180;
     const rayOrigin = { x: translation.x, y: translation.y + 0.1, z: translation.z };
     const rayDir = { x: 0, y: -1, z: 0 };
     const maxToi = 0.55; // Distance to floor
     const ray = new rapier.Ray(rayOrigin, rayDir);
-    const hit = world.castRay(
-      ray,
-      maxToi,
-      true,
-      undefined,
-      undefined,
-      rigidBodyRef.current.collider(0)
-    );
+    const hit = isActivelyAscendingJump
+      ? null
+      : world.castRay(
+          ray,
+          maxToi,
+          true,
+          undefined,
+          undefined,
+          rigidBodyRef.current.collider(0)
+        );
 
     const wasGrounded = isGroundedRef.current;
-    const isNowGrounded = hit !== null && hit.timeOfImpact <= maxToi;
+    const isNowGrounded = !isActivelyAscendingJump && hit !== null && hit.timeOfImpact <= maxToi;
     isGroundedRef.current = isNowGrounded;
 
     if (isNowGrounded) {
@@ -219,20 +233,30 @@ export const PlayerPhysics: React.FC<PlayerPhysicsProps> = ({
       lastDashTimeRef.current = now;
       dashActiveUntilRef.current = now + GAME_CONFIG.player.dashDurationMs;
 
-      // Determine dash direction
-      const currentFacing = visualStateRef.current.facingAngle;
-      let dashDir = new THREE.Vector3(
-        -Math.sin(currentFacing),
-        0,
-        -Math.cos(currentFacing)
-      ).normalize();
-
-      if (input.moveX !== 0 || input.moveZ !== 0) {
-        const inputAngle = Math.atan2(input.moveX, input.moveZ) + cameraYawRef.current;
-        dashDir.set(Math.sin(inputAngle), 0, Math.cos(inputAngle)).normalize();
+      // Determine FORWARD dash direction (relative to camera or cat facing)
+      if (Math.abs(input.moveX) > 0.05 || Math.abs(input.moveZ) > 0.05) {
+        // Dash in the current camera-relative input direction
+        forwardVecRef.current.set(0, 0, -1).applyAxisAngle(yAxisRef.current, cameraYawRef.current);
+        rightVecRef.current.set(1, 0, 0).applyAxisAngle(yAxisRef.current, cameraYawRef.current);
+        dashDirectionRef.current
+          .copy(forwardVecRef.current)
+          .multiplyScalar(input.moveZ)
+          .addScaledVector(rightVecRef.current, input.moveX)
+          .normalize();
+      } else {
+        // Dash forward in the direction the cat is currently facing
+        const currentFacing = visualStateRef.current.facingAngle;
+        dashDirectionRef.current
+          .set(Math.sin(currentFacing), 0, Math.cos(currentFacing))
+          .normalize();
       }
 
-      dashDirectionRef.current.copy(dashDir);
+      // Turn visual model to face the dash direction
+      visualStateRef.current.facingAngle = Math.atan2(
+        dashDirectionRef.current.x,
+        dashDirectionRef.current.z
+      );
+
       AudioManager.playDash();
     }
 
@@ -254,8 +278,8 @@ export const PlayerPhysics: React.FC<PlayerPhysicsProps> = ({
       targetVelY = GAME_CONFIG.player.jumpImpulse + (isKinematicGround && groundVel.y > 0 ? groundVel.y : 0);
       AudioManager.playJump();
       visualStateRef.current.animState = 'jump';
-    } else if (isKinematicGround) {
-      // Firmly anchor the cat to vertical elevators whether ascending or descending
+    } else if (isKinematicGround && now - lastJumpTimeRef.current > 250 && linvel.y <= 0.1) {
+      // Firmly anchor the cat to vertical elevators ONLY when descending or resting (NOT while jumping up!)
       targetVelY = groundVel.y;
     }
 

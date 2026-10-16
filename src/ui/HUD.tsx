@@ -75,8 +75,8 @@ export const HUD: React.FC<HUDProps> = ({ onOpenPause }) => {
 
         {/* Center Banner Notification */}
         {gameState.bannerMessage && (
-          <div className="absolute left-1/2 -translate-x-1/2 top-4 md:top-6 pointer-events-none max-w-[85vw]">
-            <div className="dream-glass px-5 py-2.5 md:px-6 md:py-3 rounded-2xl shadow-xl flex items-center space-x-2 border-2 border-[#F6A9D2] animate-bounce-subtle text-center">
+          <div className="absolute left-1/2 -translate-x-1/2 top-4 md:top-6 pointer-events-none max-w-[85vw] z-50">
+            <div className="bg-[#FFF4F8]/95 px-5 py-2.5 md:px-6 md:py-3 rounded-2xl shadow-xl flex items-center space-x-2 border-2 border-[#F6A9D2] animate-bounce-subtle text-center transform-gpu">
               <span className="text-sm md:text-base font-bold text-[#49354F]">
                 {gameState.bannerMessage}
               </span>

@@ -17,6 +17,7 @@ export const HiddenBell: React.FC<HiddenBellProps> = ({ id, position, name = 'Hi
   const [collected, setCollected] = useState<boolean>(isInitiallyCollected);
   const bellGroupRef = useRef<THREE.Group>(null);
   const animTimeRef = useRef<number>(Math.random() * 10);
+  const hasTriggeredRef = useRef<boolean>(false);
 
   useFrame((_, delta) => {
     if (collected || !bellGroupRef.current) return;
@@ -30,22 +31,25 @@ export const HiddenBell: React.FC<HiddenBellProps> = ({ id, position, name = 'Hi
   });
 
   const handleIntersection = () => {
-    if (collected) return;
-    const wasCollected = SaveManager.collectBell(id);
-    if (wasCollected) {
-      setCollected(true);
-      AudioManager.playBellChime();
-      const count = SaveManager.getData().collectedBellIds.length;
-      if (count === 3) {
-        GameState.showBanner('🔔 Hidden Bell found! (3/8) 🌸 Sakura Flower Pin Unlocked! [I]', 4000);
-      } else if (count === 6) {
-        GameState.showBanner('🔔 Hidden Bell found! (6/8) 🎀 Pink Ribbon Bow Unlocked! [I]', 4000);
-      } else if (count === 8) {
-        GameState.showBanner('🔔 All 8 Hidden Bells found! You are a master explorer! 🐾', 4000);
-      } else {
-        GameState.showBanner(`🔔 ${name} discovered! (${count}/8)`, 2600);
+    if (collected || hasTriggeredRef.current) return;
+    hasTriggeredRef.current = true;
+    requestAnimationFrame(() => {
+      const wasCollected = SaveManager.collectBell(id);
+      if (wasCollected) {
+        setCollected(true);
+        AudioManager.playBellChime();
+        const count = SaveManager.getData().collectedBellIds.length;
+        if (count === 3) {
+          GameState.showBanner('🔔 Hidden Bell found! (3/8) 🌸 Sakura Flower Pin Unlocked! [I]', 4000);
+        } else if (count === 6) {
+          GameState.showBanner('🔔 Hidden Bell found! (6/8) 🎀 Pink Ribbon Bow Unlocked! [I]', 4000);
+        } else if (count === 8) {
+          GameState.showBanner('🔔 All 8 Hidden Bells found! You are a master explorer! 🐾', 4000);
+        } else {
+          GameState.showBanner(`🔔 ${name} discovered! (${count}/8)`, 2600);
+        }
       }
-    }
+    });
   };
 
   if (collected) return null;

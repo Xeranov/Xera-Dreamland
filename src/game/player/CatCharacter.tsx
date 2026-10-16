@@ -51,6 +51,22 @@ const goldBell = new THREE.MeshStandardMaterial({
   metalness: 0.8,
 });
 
+const satinPink = new THREE.MeshStandardMaterial({
+  color: '#FF8EB8',
+  emissive: '#FF599A',
+  emissiveIntensity: 0.35,
+  roughness: 0.2,
+  metalness: 0.1,
+});
+
+const satinDarkPink = new THREE.MeshStandardMaterial({
+  color: '#E83E8C',
+  emissive: '#C2185B',
+  emissiveIntensity: 0.3,
+  roughness: 0.2,
+  metalness: 0.1,
+});
+
 export const CatCharacter: React.FC<CatCharacterProps> = ({
   visualStateRef,
   equippedAccessory = null,
@@ -234,28 +250,107 @@ export const CatCharacter: React.FC<CatCharacterProps> = ({
             <sphereGeometry args={[0.045, 16, 16]} />
           </mesh>
 
-          {/* Accessory: Pink Satin Ribbon Bow */}
+          {/* Accessory: Pink Satin Ribbon Bow (Prominent 360° visibility: back follow-cam bow & front collar bow) */}
           {equippedAccessory === 'ribbon_bow' && (
-            <group position={[0, 0.17, 0.32]} rotation={[0.2, 0, 0]}>
-              {/* Knot */}
-              <mesh material={vinylDarkPink}>
-                <sphereGeometry args={[0.035, 10, 10]} />
-              </mesh>
-              {/* Left Bow Loop */}
-              <mesh material={vinylPink} position={[-0.065, 0.02, 0]} rotation={[0, 0.3, 0.4]} scale={[0.06, 0.038, 0.02]}>
-                <sphereGeometry args={[1, 10, 10]} />
-              </mesh>
-              {/* Right Bow Loop */}
-              <mesh material={vinylPink} position={[0.065, 0.02, 0]} rotation={[0, -0.3, -0.4]} scale={[0.06, 0.038, 0.02]}>
-                <sphereGeometry args={[1, 10, 10]} />
-              </mesh>
-              {/* Ribbon Tails */}
-              <mesh material={vinylPink} position={[-0.035, -0.055, 0.01]} rotation={[0, 0, 0.25]} scale={[0.022, 0.06, 0.01]}>
-                <boxGeometry args={[1, 1, 1]} />
-              </mesh>
-              <mesh material={vinylPink} position={[0.035, -0.055, 0.01]} rotation={[0, 0, -0.25]} scale={[0.022, 0.06, 0.01]}>
-                <boxGeometry args={[1, 1, 1]} />
-              </mesh>
+            <group>
+              {/* Back Ribbon Bow (Visible in default 3rd-person follow camera) */}
+              <group position={[0, 0.28, -0.14]} rotation={[-0.3, 0, 0]}>
+                {/* Central Satin Knot */}
+                <mesh material={satinDarkPink}>
+                  <sphereGeometry args={[0.045, 12, 12]} />
+                </mesh>
+                {/* Iridescent Rainbow Jewel / Star Centerpiece */}
+                <mesh position={[0, 0, -0.04]} scale={[0.02, 0.02, 0.012]}>
+                  <octahedronGeometry args={[1, 0]} />
+                  <meshStandardMaterial
+                    color="#FFF5FB"
+                    emissive="#FF8EB8"
+                    emissiveIntensity={0.6}
+                    roughness={0.1}
+                    metalness={0.3}
+                  />
+                </mesh>
+                {/* Left Bow Loop */}
+                <mesh
+                  material={satinPink}
+                  position={[-0.09, 0.035, -0.01]}
+                  rotation={[0, -0.25, 0.35]}
+                  scale={[0.095, 0.06, 0.03]}
+                >
+                  <sphereGeometry args={[1, 12, 12]} />
+                </mesh>
+                {/* Right Bow Loop */}
+                <mesh
+                  material={satinPink}
+                  position={[0.09, 0.035, -0.01]}
+                  rotation={[0, 0.25, -0.35]}
+                  scale={[0.095, 0.06, 0.03]}
+                >
+                  <sphereGeometry args={[1, 12, 12]} />
+                </mesh>
+                {/* Left Streamer / Fluttery Tail */}
+                <mesh
+                  material={satinPink}
+                  position={[-0.05, -0.09, -0.02]}
+                  rotation={[0.1, 0, 0.3]}
+                  scale={[0.032, 0.11, 0.012]}
+                >
+                  <boxGeometry args={[1, 1, 1]} />
+                </mesh>
+                {/* Right Streamer / Fluttery Tail */}
+                <mesh
+                  material={satinPink}
+                  position={[0.05, -0.09, -0.02]}
+                  rotation={[0.1, 0, -0.3]}
+                  scale={[0.032, 0.11, 0.012]}
+                >
+                  <boxGeometry args={[1, 1, 1]} />
+                </mesh>
+              </group>
+
+              {/* Front Ribbon Bow (Visible in front-facing orbit camera) */}
+              <group position={[0, 0.15, 0.34]} rotation={[0.25, 0, 0]}>
+                {/* Front Knot */}
+                <mesh material={satinDarkPink}>
+                  <sphereGeometry args={[0.038, 12, 12]} />
+                </mesh>
+                {/* Left Bow Loop */}
+                <mesh
+                  material={satinPink}
+                  position={[-0.075, 0.025, 0]}
+                  rotation={[0, 0.3, 0.4]}
+                  scale={[0.075, 0.045, 0.025]}
+                >
+                  <sphereGeometry args={[1, 10, 10]} />
+                </mesh>
+                {/* Right Bow Loop */}
+                <mesh
+                  material={satinPink}
+                  position={[0.075, 0.025, 0]}
+                  rotation={[0, -0.3, -0.4]}
+                  scale={[0.075, 0.045, 0.025]}
+                >
+                  <sphereGeometry args={[1, 10, 10]} />
+                </mesh>
+                {/* Left Front Tail */}
+                <mesh
+                  material={satinPink}
+                  position={[-0.04, -0.06, 0.01]}
+                  rotation={[0, 0, 0.25]}
+                  scale={[0.025, 0.07, 0.01]}
+                >
+                  <boxGeometry args={[1, 1, 1]} />
+                </mesh>
+                {/* Right Front Tail */}
+                <mesh
+                  material={satinPink}
+                  position={[0.04, -0.06, 0.01]}
+                  rotation={[0, 0, -0.25]}
+                  scale={[0.025, 0.07, 0.01]}
+                >
+                  <boxGeometry args={[1, 1, 1]} />
+                </mesh>
+              </group>
             </group>
           )}
 

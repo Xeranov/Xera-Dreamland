@@ -17,6 +17,7 @@ export const Collectible: React.FC<CollectibleProps> = ({ id, position }) => {
   const starMeshRef = useRef<THREE.Group>(null);
   const ringRef = useRef<THREE.Mesh>(null);
   const animTimeRef = useRef<number>(Math.random() * 10);
+  const hasTriggeredRef = useRef<boolean>(false);
 
   useFrame((_, delta) => {
     if (collected || !starMeshRef.current) return;
@@ -35,13 +36,16 @@ export const Collectible: React.FC<CollectibleProps> = ({ id, position }) => {
   });
 
   const handleIntersection = () => {
-    if (collected) return;
-    const wasCollected = SaveManager.collectStar(id);
-    if (wasCollected) {
-      setCollected(true);
-      AudioManager.playStarCollect();
-      GameState.showBanner('Star Fragment discovered! ✨ (+1)');
-    }
+    if (collected || hasTriggeredRef.current) return;
+    hasTriggeredRef.current = true;
+    requestAnimationFrame(() => {
+      const wasCollected = SaveManager.collectStar(id);
+      if (wasCollected) {
+        setCollected(true);
+        AudioManager.playStarCollect();
+        GameState.showBanner('Star Fragment discovered! ✨ (+1)');
+      }
+    });
   };
 
   if (collected) return null;
