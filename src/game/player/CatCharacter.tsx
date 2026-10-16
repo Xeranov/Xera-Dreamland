@@ -9,13 +9,50 @@ interface CatCharacterProps {
   speed: number; // current horizontal speed
   isDashing: boolean;
   facingAngle: number; // yaw rotation in radians
+  equippedAccessory?: string | null;
 }
+
+// Materials: Glossy Vinyl Toy Aesthetic
+const vinylWhite = new THREE.MeshStandardMaterial({
+  color: '#FFF8FA',
+  roughness: 0.18,
+  metalness: 0.06,
+});
+
+const vinylPink = new THREE.MeshStandardMaterial({
+  color: '#F6A9D2',
+  roughness: 0.25,
+  metalness: 0.05,
+});
+
+const vinylDarkPink = new THREE.MeshStandardMaterial({
+  color: '#E887B7',
+  roughness: 0.25,
+  metalness: 0.05,
+});
+
+const vinylObsidian = new THREE.MeshStandardMaterial({
+  color: '#281E2E',
+  roughness: 0.1,
+  metalness: 0.1,
+});
+
+const eyeSparkle = new THREE.MeshBasicMaterial({
+  color: '#FFFFFF',
+});
+
+const goldBell = new THREE.MeshStandardMaterial({
+  color: '#FCD34D',
+  roughness: 0.2,
+  metalness: 0.8,
+});
 
 export const CatCharacter: React.FC<CatCharacterProps> = ({
   animState,
   speed,
   isDashing,
   facingAngle,
+  equippedAccessory = null,
 }) => {
   const rootRef = useRef<THREE.Group>(null);
   const bodyRef = useRef<THREE.Group>(null);
@@ -169,41 +206,6 @@ export const CatCharacter: React.FC<CatCharacterProps> = ({
     if (backRightLegRef.current) backRightLegRef.current.rotation.x = brLegRotX;
   });
 
-  // Materials: Glossy Vinyl Toy Aesthetic
-  const vinylWhite = new THREE.MeshStandardMaterial({
-    color: '#FFF8FA',
-    roughness: 0.18,
-    metalness: 0.06,
-  });
-
-  const vinylPink = new THREE.MeshStandardMaterial({
-    color: '#F6A9D2',
-    roughness: 0.25,
-    metalness: 0.05,
-  });
-
-  const vinylDarkPink = new THREE.MeshStandardMaterial({
-    color: '#E887B7',
-    roughness: 0.25,
-    metalness: 0.05,
-  });
-
-  const vinylObsidian = new THREE.MeshStandardMaterial({
-    color: '#281E2E',
-    roughness: 0.1,
-    metalness: 0.1,
-  });
-
-  const eyeSparkle = new THREE.MeshBasicMaterial({
-    color: '#FFFFFF',
-  });
-
-  const goldBell = new THREE.MeshStandardMaterial({
-    color: '#FCD34D',
-    roughness: 0.2,
-    metalness: 0.8,
-  });
-
   return (
     <group ref={rootRef} dispose={null}>
       {/* Root offset to align pivot with ground */}
@@ -229,6 +231,31 @@ export const CatCharacter: React.FC<CatCharacterProps> = ({
           <mesh material={goldBell} position={[0, 0.16, 0.28]}>
             <sphereGeometry args={[0.045, 16, 16]} />
           </mesh>
+
+          {/* Accessory: Pink Satin Ribbon Bow */}
+          {equippedAccessory === 'ribbon_bow' && (
+            <group position={[0, 0.17, 0.32]} rotation={[0.2, 0, 0]}>
+              {/* Knot */}
+              <mesh material={vinylDarkPink}>
+                <sphereGeometry args={[0.035, 10, 10]} />
+              </mesh>
+              {/* Left Bow Loop */}
+              <mesh material={vinylPink} position={[-0.065, 0.02, 0]} rotation={[0, 0.3, 0.4]} scale={[0.06, 0.038, 0.02]}>
+                <sphereGeometry args={[1, 10, 10]} />
+              </mesh>
+              {/* Right Bow Loop */}
+              <mesh material={vinylPink} position={[0.065, 0.02, 0]} rotation={[0, -0.3, -0.4]} scale={[0.06, 0.038, 0.02]}>
+                <sphereGeometry args={[1, 10, 10]} />
+              </mesh>
+              {/* Ribbon Tails */}
+              <mesh material={vinylPink} position={[-0.035, -0.055, 0.01]} rotation={[0, 0, 0.25]} scale={[0.022, 0.06, 0.01]}>
+                <boxGeometry args={[1, 1, 1]} />
+              </mesh>
+              <mesh material={vinylPink} position={[0.035, -0.055, 0.01]} rotation={[0, 0, -0.25]} scale={[0.022, 0.06, 0.01]}>
+                <boxGeometry args={[1, 1, 1]} />
+              </mesh>
+            </group>
+          )}
 
           {/* Tail */}
           <group ref={tailRef} position={[0, 0.05, -0.32]}>
@@ -328,6 +355,90 @@ export const CatCharacter: React.FC<CatCharacterProps> = ({
               <coneGeometry args={[1, 1, 4]} />
             </mesh>
           </group>
+
+          {/* Accessory: Sakura Flower Pin (worn near left ear) */}
+          {equippedAccessory === 'flower_pin' && (
+            <group position={[-0.22, 0.23, 0.1]} rotation={[0.2, -0.25, 0.35]}>
+              {/* Golden stamen core */}
+              <mesh material={goldBell}>
+                <sphereGeometry args={[0.035, 10, 10]} />
+              </mesh>
+              {/* 5 Petals */}
+              {[0, 1, 2, 3, 4].map((i) => {
+                const angle = (i * Math.PI * 2) / 5;
+                return (
+                  <mesh
+                    key={i}
+                    material={vinylPink}
+                    position={[Math.cos(angle) * 0.05, Math.sin(angle) * 0.05, 0]}
+                    rotation={[0, 0, angle]}
+                    scale={[0.045, 0.028, 0.015]}
+                  >
+                    <sphereGeometry args={[1, 8, 8]} />
+                  </mesh>
+                );
+              })}
+              {/* Mint leaf */}
+              <mesh position={[-0.055, -0.04, -0.01]} rotation={[0, 0, -0.6]} scale={[0.035, 0.018, 0.01]}>
+                <sphereGeometry args={[1, 6, 6]} />
+                <meshStandardMaterial color="#BFEBD8" roughness={0.35} />
+              </mesh>
+            </group>
+          )}
+
+          {/* Accessory: Golden Starlight Crown (worn between ears) */}
+          {equippedAccessory === 'starlight_crown' && (
+            <group position={[0, 0.32, 0.02]} rotation={[-0.1, 0, 0]}>
+              {/* Crown Base Circlet */}
+              <mesh material={goldBell}>
+                <cylinderGeometry args={[0.13, 0.14, 0.04, 16]} />
+              </mesh>
+              {/* Center Crown Peak */}
+              <mesh material={goldBell} position={[0, 0.055, 0.11]} rotation={[-0.2, 0, 0]} scale={[0.035, 0.07, 0.02]}>
+                <coneGeometry args={[1, 1, 4]} />
+              </mesh>
+              {/* Center Gem (Gold Star Sparkle) */}
+              <mesh position={[0, 0.095, 0.1]} scale={[0.022, 0.022, 0.022]}>
+                <octahedronGeometry args={[1, 0]} />
+                <meshStandardMaterial
+                  color="#FFDF6D"
+                  emissive="#FFA500"
+                  emissiveIntensity={0.8}
+                  roughness={0.1}
+                />
+              </mesh>
+              {/* Left Crown Peak */}
+              <mesh material={goldBell} position={[-0.09, 0.05, 0.05]} rotation={[-0.1, 0, 0.35]} scale={[0.03, 0.06, 0.02]}>
+                <coneGeometry args={[1, 1, 4]} />
+              </mesh>
+              {/* Left Gem (Lavender) */}
+              <mesh position={[-0.11, 0.08, 0.05]} scale={[0.018, 0.018, 0.018]}>
+                <octahedronGeometry args={[1, 0]} />
+                <meshStandardMaterial
+                  color="#C9B8FF"
+                  emissive="#9D84F0"
+                  emissiveIntensity={0.8}
+                  roughness={0.1}
+                />
+              </mesh>
+              {/* Right Crown Peak */}
+              <mesh material={goldBell} position={[0.09, 0.05, 0.05]} rotation={[-0.1, 0, -0.35]} scale={[0.03, 0.06, 0.02]}>
+                <coneGeometry args={[1, 1, 4]} />
+              </mesh>
+              {/* Right Gem (Cyan) */}
+              <mesh position={[0.11, 0.08, 0.05]} scale={[0.018, 0.018, 0.018]}>
+                <octahedronGeometry args={[1, 0]} />
+                <meshStandardMaterial
+                  color="#B9E5FF"
+                  emissive="#6AD1FF"
+                  emissiveIntensity={0.8}
+                  roughness={0.1}
+                />
+              </mesh>
+              {/* Sparkle Glow Light */}
+              <pointLight color="#FFE28A" intensity={1.2} distance={1.8} position={[0, 0.1, 0.08]} />
+            </group>
+          )}
 
           {/* Left Eye */}
           <group position={[-0.12, 0.02, 0.27]} rotation={[0, -0.2, 0]}>

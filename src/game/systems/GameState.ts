@@ -17,6 +17,13 @@ export interface GameStateData {
   dashCooldown: number; // 0 (on cooldown) to 1 (ready)
   bannerMessage: string | null;
   collectedStarsCount: number;
+  totalStarsCount: number;
+  collectedBellsCount: number;
+  totalBellsCount: number;
+  equippedAccessory: string | null;
+  unlockedAccessories: string[];
+  shrineCompleted: boolean;
+  isInventoryOpen: boolean;
 }
 
 type StateListener = (state: GameStateData) => void;
@@ -28,6 +35,13 @@ class GameStateManager {
     dashCooldown: 1.0,
     bannerMessage: null,
     collectedStarsCount: SaveManager.getData().collectedStarIds.length,
+    totalStarsCount: 24,
+    collectedBellsCount: SaveManager.getData().collectedBellIds.length,
+    totalBellsCount: 8,
+    equippedAccessory: SaveManager.getData().equippedAccessory,
+    unlockedAccessories: SaveManager.getData().unlockedAccessories,
+    shrineCompleted: SaveManager.getData().shrineCompleted,
+    isInventoryOpen: false,
   };
 
   public touch: TouchInputState = {
@@ -44,7 +58,14 @@ class GameStateManager {
 
   constructor() {
     SaveManager.subscribe((saveData) => {
-      this.state.collectedStarsCount = saveData.collectedStarIds.length;
+      this.state = {
+        ...this.state,
+        collectedStarsCount: saveData.collectedStarIds.length,
+        collectedBellsCount: saveData.collectedBellIds.length,
+        equippedAccessory: saveData.equippedAccessory,
+        unlockedAccessories: saveData.unlockedAccessories,
+        shrineCompleted: saveData.shrineCompleted,
+      };
       this.notify();
     });
   }
@@ -77,6 +98,16 @@ class GameStateManager {
   public setDashCooldown(progress: number) {
     this.state = { ...this.state, dashCooldown: progress };
     this.notify();
+  }
+
+  public setInventoryOpen(open: boolean) {
+    if (this.state.isInventoryOpen === open) return;
+    this.state = { ...this.state, isInventoryOpen: open };
+    this.notify();
+  }
+
+  public toggleInventory() {
+    this.setInventoryOpen(!this.state.isInventoryOpen);
   }
 
   public showBanner(msg: string, durationMs: number = 2500) {

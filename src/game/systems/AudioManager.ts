@@ -292,6 +292,116 @@ class AudioManagerClass {
     osc2.stop(now + 0.85);
   }
 
+  // --- Hidden Bell Chime ---
+  public playBellChime() {
+    if (!this.ctx || !this.sfxGain) return;
+    const now = this.ctx.currentTime;
+
+    // Harmonic bell chord: E6 (1318.5Hz), G#6 (1661.2Hz), B6 (1975.5Hz), E7 (2637.0Hz)
+    const bellPitches = [1318.5, 1661.2, 1975.5, 2637.0, 3951.0];
+    bellPitches.forEach((freq, idx) => {
+      if (!this.ctx || !this.sfxGain) return;
+      const t = now + idx * 0.04;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t);
+
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.24 / (idx * 0.35 + 1), t + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0008, t + 0.7);
+
+      osc.connect(gain);
+      gain.connect(this.sfxGain);
+
+      osc.start(t);
+      osc.stop(t + 0.75);
+    });
+  }
+
+  // --- Starlight Gate Open ---
+  public playGateOpen() {
+    if (!this.ctx || !this.sfxGain) return;
+    const now = this.ctx.currentTime;
+
+    // Deep resonant rumble
+    const oscBass = this.ctx.createOscillator();
+    const bassGain = this.ctx.createGain();
+    oscBass.type = 'triangle';
+    oscBass.frequency.setValueAtTime(110, now);
+    oscBass.frequency.exponentialRampToValueAtTime(220, now + 1.2);
+    bassGain.gain.setValueAtTime(0.01, now);
+    bassGain.gain.linearRampToValueAtTime(0.35, now + 0.1);
+    bassGain.gain.exponentialRampToValueAtTime(0.001, now + 1.4);
+    oscBass.connect(bassGain);
+    bassGain.connect(this.sfxGain);
+    oscBass.start(now);
+    oscBass.stop(now + 1.5);
+
+    // Celestial chime cascade
+    const gateNotes = [523.25, 659.25, 783.99, 1046.5, 1318.5, 1567.98];
+    gateNotes.forEach((freq, i) => {
+      if (!this.ctx || !this.sfxGain) return;
+      const t = now + 0.2 + i * 0.12;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.2, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+      osc.connect(gain);
+      gain.connect(this.sfxGain);
+      osc.start(t);
+      osc.stop(t + 0.65);
+    });
+  }
+
+  // --- Beacon Light Up ---
+  public playBeaconActivate() {
+    if (!this.ctx || !this.sfxGain) return;
+    const now = this.ctx.currentTime;
+    const freqs = [440, 554.37, 659.25, 880];
+    freqs.forEach((freq, i) => {
+      if (!this.ctx || !this.sfxGain) return;
+      const t = now + i * 0.06;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.22, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+      osc.connect(gain);
+      gain.connect(this.sfxGain);
+      osc.start(t);
+      osc.stop(t + 0.55);
+    });
+  }
+
+  // --- Shrine Victory Fanfare ---
+  public playShrineVictory() {
+    if (!this.ctx || !this.sfxGain) return;
+    const now = this.ctx.currentTime;
+    const arpeggio = [523.25, 659.25, 783.99, 1046.5, 1318.5, 1567.98, 2093.0];
+    arpeggio.forEach((freq, i) => {
+      if (!this.ctx || !this.sfxGain) return;
+      const t = now + i * 0.1;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(freq, t);
+      gain.gain.setValueAtTime(0, t);
+      gain.gain.linearRampToValueAtTime(0.3, t + 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
+      osc.connect(gain);
+      gain.connect(this.sfxGain);
+      osc.start(t);
+      osc.stop(t + 0.95);
+    });
+  }
+
   // --- Ambient Music Loop (Pastel Dream Pads) ---
   private startAmbientMusic() {
     if (this.ambientInterval !== null) return;

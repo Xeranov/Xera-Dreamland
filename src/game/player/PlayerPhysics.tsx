@@ -34,6 +34,15 @@ export const PlayerPhysics: React.FC<PlayerPhysicsProps> = ({
   const [facingAngle, setFacingAngle] = useState<number>(0);
   const [currentSpeed, setCurrentSpeed] = useState<number>(0);
   const [isDashing, setIsDashing] = useState<boolean>(false);
+  const [equippedAccessory, setEquippedAccessory] = useState<string | null>(
+    SaveManager.getData().equippedAccessory
+  );
+
+  useEffect(() => {
+    return SaveManager.subscribe((data) => {
+      setEquippedAccessory(data.equippedAccessory);
+    });
+  }, []);
 
   // Jump & Grounding State Refs
   const isGroundedRef = useRef<boolean>(true);
@@ -163,6 +172,18 @@ export const PlayerPhysics: React.FC<PlayerPhysicsProps> = ({
       }
     }
 
+    // Kinematic moving platform velocity calculation
+    let groundVel = { x: 0, y: 0, z: 0 };
+    let isKinematicGround = false;
+
+    if (isNowGrounded && hit) {
+      const groundRb = hit.collider.parent();
+      if (groundRb && groundRb.isKinematic()) {
+        isKinematicGround = true;
+        groundVel = groundRb.linvel();
+      }
+    }
+
     // 2. Dash Cooldown & State
     const timeSinceDash = now - lastDashTimeRef.current;
     const dashCooldownProgress = Math.min(1, timeSinceDash / GAME_CONFIG.player.dashCooldownMs);
@@ -207,9 +228,12 @@ export const PlayerPhysics: React.FC<PlayerPhysicsProps> = ({
       lastJumpTimeRef.current = now;
       jumpBufferTimeRef.current = 0; // consume buffer
       lastGroundedTimeRef.current = 0; // consume coyote
-      targetVelY = GAME_CONFIG.player.jumpImpulse;
+      targetVelY = GAME_CONFIG.player.jumpImpulse + (isKinematicGround && groundVel.y > 0 ? groundVel.y : 0);
       AudioManager.playJump();
       setAnimState('jump');
+    } else if (isKinematicGround) {
+      // Firmly anchor the cat to vertical elevators whether ascending or descending
+      targetVelY = groundVel.y;
     }
 
     // 4. Horizontal Locomotion (Relative to Camera Yaw)
@@ -240,19 +264,25 @@ export const PlayerPhysics: React.FC<PlayerPhysicsProps> = ({
       }
     }
 
+    // Add ground momentum to desired horizontal velocity
+    const desiredVelX = targetVelX + groundVel.x;
+    const desiredVelZ = targetVelZ + groundVel.z;
+
     // Acceleration & Air Control Dampening
     const accelRate = isNowGrounded
       ? GAME_CONFIG.player.acceleration
       : GAME_CONFIG.player.acceleration * GAME_CONFIG.player.airControl;
 
-    const newVelX = THREE.MathUtils.lerp(linvel.x, targetVelX, Math.min(1, accelRate * dt));
-    const newVelZ = THREE.MathUtils.lerp(linvel.z, targetVelZ, Math.min(1, accelRate * dt));
+    const newVelX = THREE.MathUtils.lerp(linvel.x, desiredVelX, Math.min(1, accelRate * dt));
+    const newVelZ = THREE.MathUtils.lerp(linvel.z, desiredVelZ, Math.min(1, accelRate * dt));
 
     // Apply linvel to rigid body
     rigidBodyRef.current.setLinvel({ x: newVelX, y: targetVelY, z: newVelZ }, true);
 
-    // Calculate current horizontal speed for animations
-    const horizSpeed = Math.sqrt(newVelX * newVelX + newVelZ * newVelZ);
+    // Calculate current horizontal speed relative to ground for animations
+    const relVelX = newVelX - groundVel.x;
+    const relVelZ = newVelZ - groundVel.z;
+    const horizSpeed = Math.sqrt(relVelX * relVelX + relVelZ * relVelZ);
     setCurrentSpeed(horizSpeed);
 
     // 5. Animation State Resolution
@@ -303,6 +333,7 @@ export const PlayerPhysics: React.FC<PlayerPhysicsProps> = ({
         speed={currentSpeed}
         isDashing={isDashing}
         facingAngle={facingAngle}
+        equippedAccessory={equippedAccessory}
       />
     </RigidBody>
   );

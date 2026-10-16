@@ -30,12 +30,20 @@ export function useGameInput() {
       keysDown.current[code] = true;
 
       if (code === 'Escape') {
+        if (GameState.getState().isInventoryOpen) {
+          GameState.setInventoryOpen(false);
+          return;
+        }
         const currentScreen = GameState.getState().screen;
         if (currentScreen === 'playing') {
           GameState.setScreen('paused');
         } else if (currentScreen === 'paused') {
           GameState.setScreen('playing');
         }
+      }
+
+      if (code === 'KeyI') {
+        GameState.toggleInventory();
       }
 
       if (code === 'KeyM') {
@@ -103,6 +111,29 @@ export function useGameInput() {
   }, []);
 
   const getInput = (): GameInput => {
+    const currentState = GameState.getState();
+    const isInteractingWithUI = currentState.screen !== 'playing' || currentState.isInventoryOpen;
+
+    if (isInteractingWithUI) {
+      cameraDelta.current.x = 0;
+      cameraDelta.current.y = 0;
+      GameState.touch.cameraDelta.x = 0;
+      GameState.touch.cameraDelta.y = 0;
+      zoomDelta.current = 0;
+
+      return {
+        moveX: 0,
+        moveZ: 0,
+        jump: false,
+        dash: false,
+        interact: false,
+        meow: false,
+        cameraDeltaX: 0,
+        cameraDeltaY: 0,
+        cameraZoomDelta: 0,
+      };
+    }
+
     const keys = keysDown.current;
 
     // Desktop Keyboard

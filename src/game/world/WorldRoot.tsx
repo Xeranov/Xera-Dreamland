@@ -1,5 +1,9 @@
 import React from 'react';
 import { SakuraMeadow } from './islands/SakuraMeadow';
+import { CandyGarden } from './zones/CandyGarden';
+import { CloudBridges } from './zones/CloudBridges';
+import { StarlightShrine } from './zones/StarlightShrine';
+import { HiddenGrove } from './zones/HiddenGrove';
 import { CherryPetals } from './environment/CherryPetals';
 import { CloudDecor } from './environment/CloudDecor';
 
@@ -8,35 +12,39 @@ export const WorldRoot: React.FC = () => {
     <group>
       {/* Dreamland Atmospheric Pastel Fog */}
       <color attach="background" args={['#FFF4F8']} />
-      <fog attach="fog" args={['#FFF4F8', 18, 52]} />
+      <fog attach="fog" args={['#FFF4F8', 35, 140]} />
 
       {/* Lighting Rig */}
-      <ambientLight color="#FFF0F5" intensity={0.8} />
+      <ambientLight color="#FFF0F5" intensity={0.85} />
 
       <directionalLight
-        position={[14, 22, 12]}
+        position={[25, 42, 20]}
         color="#FFF8E7"
-        intensity={1.3}
+        intensity={1.35}
         castShadow
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
         shadow-camera-near={0.5}
-        shadow-camera-far={60}
-        shadow-camera-left={-22}
-        shadow-camera-right={22}
-        shadow-camera-top={22}
-        shadow-camera-bottom={-22}
+        shadow-camera-far={120}
+        shadow-camera-left={-45}
+        shadow-camera-right={45}
+        shadow-camera-top={45}
+        shadow-camera-bottom={-45}
         shadow-bias={-0.0003}
       />
 
       {/* Soft Sky & Ground Bounce Fill */}
-      <hemisphereLight
-        args={['#B9E5FF', '#FFF4F8', 0.5]}
-      />
+      <hemisphereLight args={['#B9E5FF', '#FFF4F8', 0.55]} />
 
-      {/* World Objects */}
+      {/* Seamless Archipelago Zones */}
       <SakuraMeadow />
-      <CherryPetals count={85} />
+      <CandyGarden />
+      <CloudBridges />
+      <StarlightShrine />
+      <HiddenGrove />
+
+      {/* Atmosphere & Ambient Particle Decor */}
+      <CherryPetals count={95} />
       <CloudDecor />
     </group>
   );

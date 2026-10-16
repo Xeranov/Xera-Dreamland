@@ -9,6 +9,9 @@ export interface SaveData {
   version: number;
   collectedStarIds: string[];
   collectedBellIds: string[];
+  unlockedAccessories: string[];
+  equippedAccessory: string | null;
+  shrineCompleted: boolean;
   checkpointId: string;
   checkpointPosition: [number, number, number];
   settings: GameSettings;
@@ -17,9 +20,12 @@ export interface SaveData {
 const STORAGE_KEY = 'xeranov_dreamland_save_v1';
 
 export const DEFAULT_SAVE_DATA: SaveData = {
-  version: 1,
+  version: 2,
   collectedStarIds: [],
   collectedBellIds: [],
+  unlockedAccessories: [],
+  equippedAccessory: null,
+  shrineCompleted: false,
   checkpointId: 'sakura_start',
   checkpointPosition: [0, 1.5, 0],
   settings: {
@@ -60,7 +66,7 @@ class SaveManagerClass {
     }
 
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = window.localStorage.getItem(STORAGE_KEY);
       if (!raw) return { ...DEFAULT_SAVE_DATA };
 
       const parsed = JSON.parse(raw);
@@ -68,11 +74,42 @@ class SaveManagerClass {
         return { ...DEFAULT_SAVE_DATA };
       }
 
-      // Validate schema
+      const bellIds: string[] = Array.isArray(parsed.collectedBellIds)
+        ? parsed.collectedBellIds.filter((id: unknown): id is string => typeof id === 'string')
+        : [];
+
+      const shrineDone = Boolean(parsed.shrineCompleted);
+
+      // Auto-unlock accessories based on bell count & shrine completion
+      const unlocked: string[] = Array.isArray(parsed.unlockedAccessories)
+        ? parsed.unlockedAccessories.filter((id: unknown): id is string => typeof id === 'string')
+        : [];
+
+      if (bellIds.length >= 3 && !unlocked.includes('flower_pin')) {
+        unlocked.push('flower_pin');
+      }
+      if (bellIds.length >= 6 && !unlocked.includes('ribbon_bow')) {
+        unlocked.push('ribbon_bow');
+      }
+      if (shrineDone && !unlocked.includes('starlight_crown')) {
+        unlocked.push('starlight_crown');
+      }
+
+      const equipped =
+        typeof parsed.equippedAccessory === 'string' && unlocked.includes(parsed.equippedAccessory)
+          ? parsed.equippedAccessory
+          : null;
+
+      // Validate schema with backward compatibility
       const validated: SaveData = {
         version: typeof parsed.version === 'number' ? parsed.version : DEFAULT_SAVE_DATA.version,
-        collectedStarIds: Array.isArray(parsed.collectedStarIds) ? parsed.collectedStarIds : [],
-        collectedBellIds: Array.isArray(parsed.collectedBellIds) ? parsed.collectedBellIds : [],
+        collectedStarIds: Array.isArray(parsed.collectedStarIds)
+          ? parsed.collectedStarIds.filter((id: unknown): id is string => typeof id === 'string')
+          : [],
+        collectedBellIds: bellIds,
+        unlockedAccessories: unlocked,
+        equippedAccessory: equipped,
+        shrineCompleted: shrineDone,
         checkpointId: typeof parsed.checkpointId === 'string' ? parsed.checkpointId : DEFAULT_SAVE_DATA.checkpointId,
         checkpointPosition:
           Array.isArray(parsed.checkpointPosition) && parsed.checkpointPosition.length === 3
@@ -118,7 +155,7 @@ class SaveManagerClass {
   private writeImmediately() {
     if (typeof window === 'undefined' || !window.localStorage) return;
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.currentData));
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(this.currentData));
     } catch (err) {
       console.error('[SaveManager] Failed to persist save data:', err);
     }
@@ -139,6 +176,88 @@ class SaveManagerClass {
 
   public isStarCollected(starId: string): boolean {
     return this.currentData.collectedStarIds.includes(starId);
+  }
+
+  public collectBell(bellId: string): boolean {
+    if (this.currentData.collectedBellIds.includes(bellId)) {
+      return false;
+    }
+    const nextBellIds = [...this.currentData.collectedBellIds, bellId];
+    const nextUnlocked = [...this.currentData.unlockedAccessories];
+
+    if (nextBellIds.length >= 3 && !nextUnlocked.includes('flower_pin')) {
+      nextUnlocked.push('flower_pin');
+    }
+    if (nextBellIds.length >= 6 && !nextUnlocked.includes('ribbon_bow')) {
+      nextUnlocked.push('ribbon_bow');
+    }
+
+    this.currentData = {
+      ...this.currentData,
+      collectedBellIds: nextBellIds,
+      unlockedAccessories: nextUnlocked,
+    };
+    this.notify();
+    this.scheduleWrite();
+    return true;
+  }
+
+  public isBellCollected(bellId: string): boolean {
+    return this.currentData.collectedBellIds.includes(bellId);
+  }
+
+  public completeShrine(): boolean {
+    if (this.currentData.shrineCompleted) return false;
+    const nextUnlocked = [...this.currentData.unlockedAccessories];
+    if (!nextUnlocked.includes('starlight_crown')) {
+      nextUnlocked.push('starlight_crown');
+    }
+    this.currentData = {
+      ...this.currentData,
+      shrineCompleted: true,
+      unlockedAccessories: nextUnlocked,
+    };
+    this.notify();
+    this.scheduleWrite();
+    return true;
+  }
+
+  public isShrineCompleted(): boolean {
+    return this.currentData.shrineCompleted;
+  }
+
+  public equipAccessory(accessoryId: string | null) {
+    if (accessoryId !== null) {
+      const isUnlocked =
+        this.currentData.unlockedAccessories.includes(accessoryId) ||
+        (accessoryId === 'flower_pin' && this.currentData.collectedBellIds.length >= 3) ||
+        (accessoryId === 'ribbon_bow' && this.currentData.collectedBellIds.length >= 6) ||
+        (accessoryId === 'starlight_crown' && this.currentData.shrineCompleted);
+
+      if (!isUnlocked) {
+        return;
+      }
+
+      if (!this.currentData.unlockedAccessories.includes(accessoryId)) {
+        this.currentData.unlockedAccessories.push(accessoryId);
+      }
+    }
+    this.currentData = {
+      ...this.currentData,
+      equippedAccessory: accessoryId,
+    };
+    this.notify();
+    this.scheduleWrite();
+  }
+
+  public unlockAccessory(accessoryId: string) {
+    if (this.currentData.unlockedAccessories.includes(accessoryId)) return;
+    this.currentData = {
+      ...this.currentData,
+      unlockedAccessories: [...this.currentData.unlockedAccessories, accessoryId],
+    };
+    this.notify();
+    this.scheduleWrite();
   }
 
   public setCheckpoint(id: string, position: [number, number, number]) {

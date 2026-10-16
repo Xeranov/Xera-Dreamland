@@ -1,6 +1,7 @@
 import React from 'react';
 import { RigidBody, CuboidCollider, CylinderCollider } from '@react-three/rapier';
 import { Collectible } from '../../objects/Collectible';
+import { HiddenBell } from '../../objects/HiddenBell';
 import { BounceMushroom } from '../../objects/BounceMushroom';
 import { PushableBox } from '../../objects/PushableBox';
 import { Checkpoint } from '../../objects/Checkpoint';
@@ -217,6 +218,16 @@ export const SakuraMeadow: React.FC = () => {
       {/* High Challenge Platform over the Void */}
       <SteppingPlatform position={[18, 3.6, -13]} size={[2.2, 0.5, 2.2]} color="#FFDF6D" />
 
+      {/* Archipelago Bridges: Pathway to Candy Garden (East) */}
+      <SteppingPlatform position={[16, 0.9, 6]} size={[2.8, 0.5, 2.8]} color="#FFCAD4" />
+      <SteppingPlatform position={[22, 1.2, 9]} size={[3.0, 0.5, 3.0]} color="#BFEBD8" />
+      <SteppingPlatform position={[28, 1.5, 12]} size={[3.2, 0.6, 3.2]} color="#FFCAD4" />
+
+      {/* Archipelago Bridges: Secret Path to Hidden Grove (North-West) */}
+      <SteppingPlatform position={[-11, 0.8, -8]} size={[2.2, 0.4, 2.2]} color="#A8E0C7" />
+      <SteppingPlatform position={[-15, 0.4, -13]} size={[2.4, 0.4, 2.4]} color="#98D6BC" />
+      <SteppingPlatform position={[-19, 0.1, -18]} size={[2.5, 0.4, 2.5]} color="#88CBB1" />
+
       {/* ---------------- 3. Sakura Trees ---------------- */}
       <SakuraTree position={[-4, 0.5, 4]} scale={1.2} />
       <SakuraTree position={[6, 0.5, 5]} scale={1.0} />
@@ -258,7 +269,7 @@ export const SakuraMeadow: React.FC = () => {
       <Checkpoint id="sakura_start" position={[0, 0.5, 0]} name="Sakura Meadow Spawn" />
       <Checkpoint id="sakura_cliffs" position={[14, 2.7, -9]} name="Starlight Overlook" />
 
-      {/* ---------------- 7. Star Fragments (6 Collectibles in MVP) ---------------- */}
+      {/* ---------------- 7. Star Fragments (6 Collectibles in Zone A) ---------------- */}
       {/* Star 1: Welcome fragment near spawn grove */}
       <Collectible id="star_meadow_1" position={[1.5, 1.4, 3.5]} />
       {/* Star 2: On top of the grassy rolling mound */}
@@ -271,6 +282,10 @@ export const SakuraMeadow: React.FC = () => {
       <Collectible id="star_meadow_5" position={[-6, 4.8, 4.5]} />
       {/* Star 6: Behind the ancient overlook tree */}
       <Collectible id="star_meadow_6" position={[-8.2, 3.2, -6.5]} />
+
+      {/* ---------------- 8. Hidden Bells (Zone A: 1 Bell) ---------------- */}
+      {/* Bell 1: Tucked high on the cottage chimney */}
+      <HiddenBell id="bell_meadow_1" position={[-5.0, 5.2, 3.9]} name="Cottage Chimney Bell" />
     </group>
   );
 };

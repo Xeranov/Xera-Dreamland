@@ -68,7 +68,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({ isPaused }) => {
         camera={{
           fov: 48,
           near: 0.1,
-          far: 120,
+          far: 240,
           position: [0, 5, 8],
         }}
         gl={{

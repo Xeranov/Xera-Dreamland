@@ -3,15 +3,18 @@ import { GameCanvas } from './GameCanvas';
 import { HUD } from '../ui/HUD';
 import { MainMenu } from '../ui/MainMenu';
 import { PauseMenu } from '../ui/PauseMenu';
+import { InventoryPanel } from '../ui/InventoryPanel';
 import { MobileControls } from '../ui/MobileControls';
 import { GameState, GameScreen } from '../game/systems/GameState';
 
 export const App: React.FC = () => {
   const [screen, setScreen] = useState<GameScreen>('menu');
+  const [isInventoryOpen, setIsInventoryOpen] = useState<boolean>(false);
 
   useEffect(() => {
     return GameState.subscribe((state) => {
       setScreen(state.screen);
+      setIsInventoryOpen(state.isInventoryOpen);
     });
   }, []);
 
@@ -28,7 +31,8 @@ export const App: React.FC = () => {
       {screen === 'playing' && (
         <>
           <HUD onOpenPause={() => GameState.setScreen('paused')} />
-          <MobileControls />
+          {!isInventoryOpen && <MobileControls />}
+          {isInventoryOpen && <InventoryPanel />}
         </>
       )}
 

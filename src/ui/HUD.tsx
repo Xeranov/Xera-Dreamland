@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { GameState, GameStateData } from '../game/systems/GameState';
 import { AudioManager } from '../game/systems/AudioManager';
-import { Sparkles, Pause, Volume2, VolumeX, Zap } from 'lucide-react';
+import { Sparkles, Pause, Volume2, VolumeX, Zap, Bell } from 'lucide-react';
 
 interface HUDProps {
   onOpenPause: () => void;
@@ -30,30 +30,54 @@ export const HUD: React.FC<HUDProps> = ({ onOpenPause }) => {
     }, 150);
   };
 
+  const handleOpenInventory = () => {
+    GameState.toggleInventory();
+  };
+
   return (
     <div className="absolute inset-0 pointer-events-none z-10 flex flex-col justify-between p-4 md:p-6">
       {/* Top Bar */}
       <div className="w-full flex items-start justify-between">
-        {/* Star Counter Pill */}
-        <div className="pointer-events-auto dream-glass px-4 py-2.5 rounded-full flex items-center space-x-2.5 shadow-md">
-          <div className="w-8 h-8 rounded-full bg-[#FFDF6D] flex items-center justify-center text-[#996B00] shadow-sm animate-pulse-glow">
-            <Sparkles className="w-5 h-5 fill-current" />
+        {/* Left Counters Cluster */}
+        <div className="flex items-center space-x-2.5 pointer-events-auto">
+          {/* Star Counter Pill */}
+          <div className="dream-glass px-3.5 py-2 md:px-4 md:py-2.5 rounded-full flex items-center space-x-2.5 shadow-md">
+            <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-[#FFDF6D] flex items-center justify-center text-[#996B00] shadow-sm animate-pulse-glow">
+              <Sparkles className="w-4 h-4 md:w-5 md:h-5 fill-current" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] md:text-xs uppercase tracking-wider font-extrabold text-[#E887B7]">
+                Stars
+              </span>
+              <span className="text-lg md:text-xl font-extrabold text-[#49354F] leading-none">
+                {gameState.collectedStarsCount}{' '}
+                <span className="text-xs md:text-sm font-semibold text-[#8C7A92]">/ 24</span>
+              </span>
+            </div>
           </div>
-          <div className="flex flex-col">
-            <span className="text-xs uppercase tracking-wider font-extrabold text-[#E887B7]">
-              Star Fragments
-            </span>
-            <span className="text-xl font-extrabold text-[#49354F] leading-none">
-              {gameState.collectedStarsCount} <span className="text-sm font-semibold text-[#8C7A92]">/ 6</span>
-            </span>
+
+          {/* Hidden Bells Counter Pill */}
+          <div className="dream-glass px-3.5 py-2 md:px-4 md:py-2.5 rounded-full flex items-center space-x-2.5 shadow-md">
+            <div className="w-7 h-7 md:w-8 md:h-8 rounded-full bg-[#FCD34D] flex items-center justify-center text-[#8C6200] shadow-sm">
+              <Bell className="w-4 h-4 md:w-5 md:h-5 fill-current" />
+            </div>
+            <div className="flex flex-col">
+              <span className="text-[10px] md:text-xs uppercase tracking-wider font-extrabold text-[#D49826]">
+                Bells
+              </span>
+              <span className="text-lg md:text-xl font-extrabold text-[#49354F] leading-none">
+                {gameState.collectedBellsCount}{' '}
+                <span className="text-xs md:text-sm font-semibold text-[#8C7A92]">/ 8</span>
+              </span>
+            </div>
           </div>
         </div>
 
         {/* Center Banner Notification */}
         {gameState.bannerMessage && (
-          <div className="absolute left-1/2 -translate-x-1/2 top-4 md:top-6 pointer-events-none">
-            <div className="dream-glass px-6 py-3 rounded-2xl shadow-xl flex items-center space-x-2 border-2 border-[#F6A9D2] animate-bounce-subtle">
-              <span className="text-base md:text-lg font-bold text-[#49354F]">
+          <div className="absolute left-1/2 -translate-x-1/2 top-4 md:top-6 pointer-events-none max-w-[85vw]">
+            <div className="dream-glass px-5 py-2.5 md:px-6 md:py-3 rounded-2xl shadow-xl flex items-center space-x-2 border-2 border-[#F6A9D2] animate-bounce-subtle text-center">
+              <span className="text-sm md:text-base font-bold text-[#49354F]">
                 {gameState.bannerMessage}
               </span>
             </div>
@@ -62,6 +86,15 @@ export const HUD: React.FC<HUDProps> = ({ onOpenPause }) => {
 
         {/* Top-Right Control Buttons */}
         <div className="flex items-center space-x-2 pointer-events-auto">
+          {/* Inventory Backpack Button */}
+          <button
+            onClick={handleOpenInventory}
+            aria-label="Open Inventory Wardrobe"
+            title="Inventory [I]"
+            className="w-11 h-11 rounded-full dream-glass flex items-center justify-center text-xl hover:border-[#E887B7] hover:scale-105 transition-all shadow-md"
+          >
+            🎒
+          </button>
           <button
             onClick={handleToggleMute}
             aria-label={isMuted ? 'Unmute Audio' : 'Mute Audio'}
@@ -97,6 +130,7 @@ export const HUD: React.FC<HUDProps> = ({ onOpenPause }) => {
           <span><kbd className="bg-white/70 px-1.5 py-0.5 rounded shadow-sm text-xs">WASD</kbd> Move</span>
           <span><kbd className="bg-white/70 px-1.5 py-0.5 rounded shadow-sm text-xs">Space</kbd> Jump</span>
           <span><kbd className="bg-white/70 px-1.5 py-0.5 rounded shadow-sm text-xs">Shift</kbd> Dash</span>
+          <span><kbd className="bg-white/70 px-1.5 py-0.5 rounded shadow-sm text-xs">I</kbd> Journal</span>
           <span><kbd className="bg-white/70 px-1.5 py-0.5 rounded shadow-sm text-xs">M</kbd> Meow</span>
           <span><kbd className="bg-white/70 px-1.5 py-0.5 rounded shadow-sm text-xs">Drag</kbd> Orbit Cam</span>
         </div>
