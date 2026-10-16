@@ -3,6 +3,7 @@ export interface GameSettings {
   sfxVolume: number;
   sensitivity: number;
   reducedMotion: boolean;
+  quality: 'low' | 'medium' | 'high';
 }
 
 export interface SaveData {
@@ -33,6 +34,7 @@ export const DEFAULT_SAVE_DATA: SaveData = {
     sfxVolume: 0.8,
     sensitivity: 1.0,
     reducedMotion: false,
+    quality: 'medium',
   },
 };
 
@@ -132,6 +134,10 @@ class SaveManagerClass {
             typeof parsed.settings?.reducedMotion === 'boolean'
               ? parsed.settings.reducedMotion
               : DEFAULT_SAVE_DATA.settings.reducedMotion,
+          quality:
+            parsed.settings?.quality === 'low' || parsed.settings?.quality === 'high'
+              ? parsed.settings.quality
+              : 'medium',
         },
       };
 

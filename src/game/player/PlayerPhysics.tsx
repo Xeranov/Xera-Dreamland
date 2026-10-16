@@ -2,15 +2,16 @@ import React, { useRef, useState, useEffect } from 'react';
 import * as THREE from 'three';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody, CapsuleCollider, useRapier, RapierRigidBody } from '@react-three/rapier';
-import { CatCharacter, CatAnimState } from './CatCharacter';
+import { CatCharacter, CatVisualState } from './CatCharacter';
 import { GAME_CONFIG } from '../config/game.config';
 import { GameState } from '../systems/GameState';
 import { SaveManager } from '../systems/SaveManager';
 import { AudioManager } from '../systems/AudioManager';
 
 interface PlayerPhysicsProps {
-  cameraYaw: number;
-  input: {
+  cameraYawRef: React.MutableRefObject<number>;
+  targetPositionRef: React.MutableRefObject<THREE.Vector3>;
+  getInput: () => {
     moveX: number;
     moveZ: number;
     jump: boolean;
@@ -18,22 +19,27 @@ interface PlayerPhysicsProps {
     interact: boolean;
     meow: boolean;
   };
-  onPositionUpdate?: (pos: THREE.Vector3) => void;
+  isPaused: boolean;
 }
 
 export const PlayerPhysics: React.FC<PlayerPhysicsProps> = ({
-  cameraYaw,
-  input,
-  onPositionUpdate,
+  cameraYawRef,
+  targetPositionRef,
+  getInput,
+  isPaused,
 }) => {
   const rigidBodyRef = useRef<RapierRigidBody>(null);
   const { rapier, world } = useRapier();
 
-  // Animations & Visual State
-  const [animState, setAnimState] = useState<CatAnimState>('idle');
-  const [facingAngle, setFacingAngle] = useState<number>(0);
-  const [currentSpeed, setCurrentSpeed] = useState<number>(0);
-  const [isDashing, setIsDashing] = useState<boolean>(false);
+  // Visual & Animation state kept in mutable ref - ZERO React re-renders per frame!
+  const visualStateRef = useRef<CatVisualState>({
+    animState: 'idle',
+    speed: 0,
+    isDashing: false,
+    facingAngle: 0,
+  });
+
+  // Re-render ONLY when equipped accessory changes via inventory
   const [equippedAccessory, setEquippedAccessory] = useState<string | null>(
     SaveManager.getData().equippedAccessory
   );
@@ -54,11 +60,18 @@ export const PlayerPhysics: React.FC<PlayerPhysicsProps> = ({
   const lastDashTimeRef = useRef<number>(-9999);
   const dashActiveUntilRef = useRef<number>(0);
   const dashDirectionRef = useRef<THREE.Vector3>(new THREE.Vector3(0, 0, 1));
+  const lastDashNotifyTimeRef = useRef<number>(0);
 
   // Footstep Timer
   const footstepAccumulatorRef = useRef<number>(0);
 
-  // External bounce trigger listener
+  // Pre-allocated vectors for useFrame to completely eliminate garbage collection spikes
+  const forwardVecRef = useRef(new THREE.Vector3());
+  const rightVecRef = useRef(new THREE.Vector3());
+  const moveDirRef = useRef(new THREE.Vector3());
+  const yAxisRef = useRef(new THREE.Vector3(0, 1, 0));
+
+  // External bounce and respawn event listeners
   useEffect(() => {
     const handleBounceEvent = (e: CustomEvent<{ force: number }>) => {
       if (!rigidBodyRef.current) return;
@@ -66,7 +79,7 @@ export const PlayerPhysics: React.FC<PlayerPhysicsProps> = ({
       const currentVel = rigidBodyRef.current.linvel();
       rigidBodyRef.current.setLinvel({ x: currentVel.x, y: force, z: currentVel.z }, true);
       isGroundedRef.current = false;
-      setAnimState('jump');
+      visualStateRef.current.animState = 'jump';
       AudioManager.playBounce();
     };
 
@@ -118,12 +131,15 @@ export const PlayerPhysics: React.FC<PlayerPhysicsProps> = ({
     const dt = Math.min(delta, 0.05);
     const now = performance.now();
 
+    const input = isPaused
+      ? { moveX: 0, moveZ: 0, jump: false, dash: false, interact: false, meow: false }
+      : getInput();
+
     const translation = rigidBodyRef.current.translation();
     const linvel = rigidBodyRef.current.linvel();
-    const playerPos = new THREE.Vector3(translation.x, translation.y, translation.z);
 
-    // Notify camera & other systems of current position
-    onPositionUpdate?.(playerPos);
+    // Update shared player position directly on ref - zero React re-render
+    targetPositionRef.current.set(translation.x, translation.y, translation.z);
 
     // Fall Check & Respawn
     if (translation.y < GAME_CONFIG.world.fallThresholdY) {
@@ -163,11 +179,12 @@ export const PlayerPhysics: React.FC<PlayerPhysicsProps> = ({
     if (isNowGrounded) {
       lastGroundedTimeRef.current = now;
       if (!wasGrounded && linvel.y < -1.5) {
-        // Landing sound and squash
         AudioManager.playLand();
-        setAnimState('land');
+        visualStateRef.current.animState = 'land';
         setTimeout(() => {
-          setAnimState('idle');
+          if (visualStateRef.current.animState === 'land') {
+            visualStateRef.current.animState = 'idle';
+          }
         }, 120);
       }
     }
@@ -187,10 +204,15 @@ export const PlayerPhysics: React.FC<PlayerPhysicsProps> = ({
     // 2. Dash Cooldown & State
     const timeSinceDash = now - lastDashTimeRef.current;
     const dashCooldownProgress = Math.min(1, timeSinceDash / GAME_CONFIG.player.dashCooldownMs);
-    GameState.setDashCooldown(dashCooldownProgress);
+
+    // Throttle HUD dash notifications to 10Hz or on completion to prevent React render churn
+    if (now - lastDashNotifyTimeRef.current > 100 || dashCooldownProgress >= 1) {
+      lastDashNotifyTimeRef.current = now;
+      GameState.setDashCooldown(dashCooldownProgress);
+    }
 
     const isDashActive = now < dashActiveUntilRef.current;
-    setIsDashing(isDashActive);
+    visualStateRef.current.isDashing = isDashActive;
 
     // Check Dash Trigger
     if (input.dash && dashCooldownProgress >= 1 && !isDashActive) {
@@ -198,14 +220,15 @@ export const PlayerPhysics: React.FC<PlayerPhysicsProps> = ({
       dashActiveUntilRef.current = now + GAME_CONFIG.player.dashDurationMs;
 
       // Determine dash direction
+      const currentFacing = visualStateRef.current.facingAngle;
       let dashDir = new THREE.Vector3(
-        -Math.sin(facingAngle),
+        -Math.sin(currentFacing),
         0,
-        -Math.cos(facingAngle)
+        -Math.cos(currentFacing)
       ).normalize();
 
       if (input.moveX !== 0 || input.moveZ !== 0) {
-        const inputAngle = Math.atan2(input.moveX, input.moveZ) + cameraYaw;
+        const inputAngle = Math.atan2(input.moveX, input.moveZ) + cameraYawRef.current;
         dashDir.set(Math.sin(inputAngle), 0, Math.cos(inputAngle)).normalize();
       }
 
@@ -230,7 +253,7 @@ export const PlayerPhysics: React.FC<PlayerPhysicsProps> = ({
       lastGroundedTimeRef.current = 0; // consume coyote
       targetVelY = GAME_CONFIG.player.jumpImpulse + (isKinematicGround && groundVel.y > 0 ? groundVel.y : 0);
       AudioManager.playJump();
-      setAnimState('jump');
+      visualStateRef.current.animState = 'jump';
     } else if (isKinematicGround) {
       // Firmly anchor the cat to vertical elevators whether ascending or descending
       targetVelY = groundVel.y;
@@ -241,26 +264,26 @@ export const PlayerPhysics: React.FC<PlayerPhysicsProps> = ({
     let targetVelZ = 0;
 
     if (isDashActive) {
-      // High speed directional dash
       targetVelX = dashDirectionRef.current.x * GAME_CONFIG.player.dashSpeed;
       targetVelZ = dashDirectionRef.current.z * GAME_CONFIG.player.dashSpeed;
     } else {
       const hasInput = Math.abs(input.moveX) > 0.05 || Math.abs(input.moveZ) > 0.05;
 
       if (hasInput) {
-        // Calculate move direction relative to camera
-        const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), cameraYaw);
-        const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), cameraYaw);
+        forwardVecRef.current.set(0, 0, -1).applyAxisAngle(yAxisRef.current, cameraYawRef.current);
+        rightVecRef.current.set(1, 0, 0).applyAxisAngle(yAxisRef.current, cameraYawRef.current);
 
-        const moveDir = forward.clone().multiplyScalar(input.moveZ).add(right.clone().multiplyScalar(input.moveX));
-        moveDir.normalize();
+        moveDirRef.current
+          .copy(forwardVecRef.current)
+          .multiplyScalar(input.moveZ)
+          .addScaledVector(rightVecRef.current, input.moveX)
+          .normalize();
 
-        targetVelX = moveDir.x * GAME_CONFIG.player.maxSpeed;
-        targetVelZ = moveDir.z * GAME_CONFIG.player.maxSpeed;
+        targetVelX = moveDirRef.current.x * GAME_CONFIG.player.maxSpeed;
+        targetVelZ = moveDirRef.current.z * GAME_CONFIG.player.maxSpeed;
 
         // Facing direction target
-        const targetAngle = Math.atan2(moveDir.x, moveDir.z);
-        setFacingAngle(targetAngle);
+        visualStateRef.current.facingAngle = Math.atan2(moveDirRef.current.x, moveDirRef.current.z);
       }
     }
 
@@ -283,22 +306,18 @@ export const PlayerPhysics: React.FC<PlayerPhysicsProps> = ({
     const relVelX = newVelX - groundVel.x;
     const relVelZ = newVelZ - groundVel.z;
     const horizSpeed = Math.sqrt(relVelX * relVelX + relVelZ * relVelZ);
-    setCurrentSpeed(horizSpeed);
+    visualStateRef.current.speed = horizSpeed;
 
     // 5. Animation State Resolution
     if (!isDashActive) {
       if (!isNowGrounded) {
-        if (targetVelY > 0.8) {
-          setAnimState('jump');
-        } else {
-          setAnimState('fall');
-        }
+        visualStateRef.current.animState = targetVelY > 0.8 ? 'jump' : 'fall';
       } else if (horizSpeed > 4.5) {
-        setAnimState('run');
+        visualStateRef.current.animState = 'run';
       } else if (horizSpeed > 0.3) {
-        setAnimState('walk');
-      } else {
-        setAnimState('idle');
+        visualStateRef.current.animState = 'walk';
+      } else if (visualStateRef.current.animState !== 'land') {
+        visualStateRef.current.animState = 'idle';
       }
     }
 
@@ -329,10 +348,7 @@ export const PlayerPhysics: React.FC<PlayerPhysicsProps> = ({
         position={[0, 0.38, 0]}
       />
       <CatCharacter
-        animState={animState}
-        speed={currentSpeed}
-        isDashing={isDashing}
-        facingAngle={facingAngle}
+        visualStateRef={visualStateRef}
         equippedAccessory={equippedAccessory}
       />
     </RigidBody>

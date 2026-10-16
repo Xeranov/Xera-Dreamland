@@ -7,7 +7,15 @@ import { HiddenGrove } from './zones/HiddenGrove';
 import { CherryPetals } from './environment/CherryPetals';
 import { CloudDecor } from './environment/CloudDecor';
 
-export const WorldRoot: React.FC = () => {
+interface WorldRootProps {
+  quality?: 'low' | 'medium' | 'high';
+}
+
+export const WorldRoot: React.FC<WorldRootProps> = ({ quality = 'medium' }) => {
+  const hasShadows = quality !== 'low';
+  const shadowMapSize = quality === 'high' ? 2048 : 1024;
+  const petalCount = quality === 'low' ? 20 : quality === 'medium' ? 45 : 80;
+
   return (
     <group>
       {/* Dreamland Atmospheric Pastel Fog */}
@@ -21,9 +29,9 @@ export const WorldRoot: React.FC = () => {
         position={[25, 42, 20]}
         color="#FFF8E7"
         intensity={1.35}
-        castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
+        castShadow={hasShadows}
+        shadow-mapSize-width={shadowMapSize}
+        shadow-mapSize-height={shadowMapSize}
         shadow-camera-near={0.5}
         shadow-camera-far={120}
         shadow-camera-left={-45}
@@ -44,7 +52,7 @@ export const WorldRoot: React.FC = () => {
       <HiddenGrove />
 
       {/* Atmosphere & Ambient Particle Decor */}
-      <CherryPetals count={95} />
+      <CherryPetals count={petalCount} />
       <CloudDecor />
     </group>
   );

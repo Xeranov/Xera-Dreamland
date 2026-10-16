@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { SaveManager, GameSettings } from '../game/systems/SaveManager';
 import { AudioManager } from '../game/systems/AudioManager';
 import { GameState } from '../game/systems/GameState';
-import { Volume2, Sliders, Eye, RotateCcw, ArrowLeft, Check } from 'lucide-react';
+import { Volume2, Sliders, Eye, RotateCcw, ArrowLeft, Check, Sparkles } from 'lucide-react';
 
 interface SettingsPanelProps {
   onBack: () => void;
@@ -36,6 +36,13 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
     const updated = { ...settings, reducedMotion: !settings.reducedMotion };
     setSettings(updated);
     SaveManager.updateSettings({ reducedMotion: updated.reducedMotion });
+  };
+
+  const handleQualityChange = (q: 'low' | 'medium' | 'high') => {
+    const updated = { ...settings, quality: q };
+    setSettings(updated);
+    SaveManager.updateSettings({ quality: q });
+    GameState.showBanner(`Graphics set to ${q.toUpperCase()} 🌸`, 1800);
   };
 
   const handleResetProgress = () => {
@@ -109,6 +116,29 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ onBack }) => {
               onChange={(e) => handleSensitivityChange(parseFloat(e.target.value))}
               className="w-full accent-[#E887B7] cursor-pointer"
             />
+          </div>
+
+          {/* Graphics Quality */}
+          <div className="bg-white/60 p-3.5 rounded-2xl border border-[#F6A9D2]/30">
+            <div className="flex justify-between items-center mb-2 font-bold text-xs uppercase text-[#E887B7]">
+              <span className="flex items-center gap-1.5"><Sparkles className="w-4 h-4" /> Graphics Quality</span>
+              <span className="capitalize">{settings.quality || 'medium'}</span>
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              {(['low', 'medium', 'high'] as const).map((q) => (
+                <button
+                  key={q}
+                  onClick={() => handleQualityChange(q)}
+                  className={`py-1.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all ${
+                    (settings.quality || 'medium') === q
+                      ? 'bg-[#E887B7] text-white shadow-sm'
+                      : 'bg-white/80 text-[#66506C] hover:bg-white'
+                  }`}
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Reduced Motion */}

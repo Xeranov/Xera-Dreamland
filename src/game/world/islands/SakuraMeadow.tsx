@@ -163,7 +163,7 @@ const SteppingPlatform: React.FC<{
         <meshStandardMaterial color={color} roughness={0.35} />
       </mesh>
       {/* Soil Bottom */}
-      <mesh castShadow receiveShadow position={[0, -size[1] / 2 - 0.25, 0]} rotation={[Math.PI, 0, 0]}>
+      <mesh position={[0, -size[1] / 2 - 0.25, 0]} rotation={[Math.PI, 0, 0]}>
         <coneGeometry args={[size[0] * 0.55, 0.6, 6]} />
         <meshStandardMaterial color="#8D6F64" roughness={0.7} />
       </mesh>
@@ -191,11 +191,11 @@ export const SakuraMeadow: React.FC = () => {
       </mesh>
 
       {/* Island Cliff Underside (Inverted Stylized Rock Pyramids) */}
-      <mesh receiveShadow position={[0, -2.6, 0]} rotation={[Math.PI, 0, 0]}>
+      <mesh position={[0, -2.6, 0]} rotation={[Math.PI, 0, 0]}>
         <coneGeometry args={[11, 4.2, 7]} />
         <meshStandardMaterial color="#94776C" roughness={0.8} />
       </mesh>
-      <mesh receiveShadow position={[-3, -3.2, 2]} rotation={[Math.PI, 0, 0]}>
+      <mesh position={[-3, -3.2, 2]} rotation={[Math.PI, 0, 0]}>
         <coneGeometry args={[6, 3.8, 6]} />
         <meshStandardMaterial color="#7A6158" roughness={0.8} />
       </mesh>

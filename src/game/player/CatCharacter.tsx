@@ -4,11 +4,15 @@ import { useFrame } from '@react-three/fiber';
 
 export type CatAnimState = 'idle' | 'walk' | 'run' | 'jump' | 'fall' | 'land' | 'dash';
 
-interface CatCharacterProps {
+export interface CatVisualState {
   animState: CatAnimState;
-  speed: number; // current horizontal speed
+  speed: number;
   isDashing: boolean;
-  facingAngle: number; // yaw rotation in radians
+  facingAngle: number;
+}
+
+interface CatCharacterProps {
+  visualStateRef: React.MutableRefObject<CatVisualState>;
   equippedAccessory?: string | null;
 }
 
@@ -48,10 +52,7 @@ const goldBell = new THREE.MeshStandardMaterial({
 });
 
 export const CatCharacter: React.FC<CatCharacterProps> = ({
-  animState,
-  speed,
-  isDashing,
-  facingAngle,
+  visualStateRef,
   equippedAccessory = null,
 }) => {
   const rootRef = useRef<THREE.Group>(null);
@@ -71,6 +72,7 @@ export const CatCharacter: React.FC<CatCharacterProps> = ({
 
   useFrame((_, delta) => {
     if (!rootRef.current) return;
+    const { animState, speed, isDashing, facingAngle } = visualStateRef.current;
     timeRef.current += delta;
     const t = timeRef.current;
 
